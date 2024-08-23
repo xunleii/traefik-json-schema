@@ -1,2 +1,70 @@
 [tools]
+"npm:ajv-cli" = "latest"
 go = "1.23"
+jq = "latest"
+yq = "latest"
+
+# -- Genrate JSON Schema
+[tasks.json-schema]
+description = "Generate all Traefik JSON Schema"
+depends = ["json-schema::*"]
+
+[tasks."json-schema::traefik-v2"]
+description = "Generate Traefik v2 JSON Schema"
+dir = "traefik-v2-json-schema"
+run = '''
+go run main.go \
+| jq 'walk(if type == "object" and (.type == "integer" or .type == "number") then del(.format) else . end)' \
+> ../dist/schemastore/src/schemas/json/traefik-v2.json
+'''
+
+[tasks."json-schema::traefik-v3"]
+description = "Generate Traefik v3 JSON Schema"
+dir = "traefik-v3-json-schema"
+run = '''
+go run main.go \
+| jq 'walk(if type == "object" and (.type == "integer" or .type == "number") then del(.format) else . end)' \
+> ../dist/schemastore/src/schemas/json/traefik-v3.json
+'''
+
+# -- Generate examples from Traefik documentation
+[tasks.examples]
+description = "Generate all Traefik examples"
+depends = ["examples::*"]
+
+[tasks."examples::traefik-v2"]
+description = "Generate Traefik v2 examples"
+# renovate: datasource=github-releases depName=traefik/traefik
+env = { TRAEFIK_VERSION = "v2.11.8" }
+run = '''
+curl --silent https://raw.githubusercontent.com/traefik/traefik/${TRAEFIK_VERSION}/docs/content/reference/static-configuration/file.yaml \
+| yq --output-format json \
+> dist/schemastore/src/test/traefik-v2/example.json
+'''
+
+[tasks."examples::traefik-v3"]
+description = "Generate Traefik v3 examples"
+# renovate: datasource=github-releases depName=traefik/traefik
+env = { TRAEFIK_VERSION = "v3.1.2" }
+run = '''
+curl --silent https://raw.githubusercontent.com/traefik/traefik/${TRAEFIK_VERSION}/docs/content/reference/static-configuration/file.yaml \
+| yq --output-format json \
+> dist/schemastore/src/test/traefik-v3/example.json
+'''
+
+# -- Validate JSON Schema
+[tasks.validate]
+description = "Validate all JSON Schema"
+depends = ["validate::*"]
+
+[tasks."validate::traefik-v2"]
+description = "Validate Traefik v2 JSON Schema"
+run = '''
+ajv test -s dist/schemastore/src/schemas/json/traefik-v2.json -d dist/schemastore/src/test/traefik-v2/example.json --valid
+'''
+
+[tasks."validate::traefik-v3"]
+description = "Validate Traefik v3 JSON Schema"
+run = '''
+ajv test -s dist/schemastore/src/schemas/json/traefik-v3.json -d dist/schemastore/src/test/traefik-v3/example.json --valid
+'''
