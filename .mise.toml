@@ -35,7 +35,7 @@ depends = ["examples::*"]
 [tasks."examples::traefik-v2"]
 description = "Generate Traefik v2 examples"
 # renovate: datasource=github-releases depName=traefik/traefik
-env = { TRAEFIK_VERSION = "v2.11.8" }
+env = { TRAEFIK_VERSION = "v2.11.20" }
 run = '''
 curl --silent https://raw.githubusercontent.com/traefik/traefik/${TRAEFIK_VERSION}/docs/content/reference/static-configuration/file.yaml \
 | yq --output-format json \
